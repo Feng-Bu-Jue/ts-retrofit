@@ -326,6 +326,7 @@ See [test](test/ts-retrofit.test.ts) to get more examples.
 | Part Parameters  |      @Part      | Specifying field map in method parameter, only effective when method has been decorated by @Multipart |  Method Parameter  |                        @Part("name")                         |
 | Response  |      @ResponseType      | Specifying the response type in axios config|  Method  |                        @ResponseType("stream")                         |
 | Filter  |      @ActionFilter      | Allow code to be run before or after in axios request  |                        @ActionFilter({invoke(){}})                         |
+
 ## Test
 
 ```bash
