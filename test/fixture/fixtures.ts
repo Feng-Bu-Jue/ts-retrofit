@@ -26,6 +26,7 @@ import {
   HeaderMap,
   ActionFilter,
   Filter,
+  MethodContext,
 } from "../../src/index";
 import { AxiosRequestConfig } from "axios";
 
@@ -36,12 +37,14 @@ export const API_PREFIX = "/api/v1";
 export const TOKEN = "abcdef123456";
 export const TEST_FILTER: Filter = {
   async invoke(
+    mehtodContext: MethodContext,
     config: AxiosRequestConfig,
-    continuation: () => Promise<Response>
+    next: () => Promise<Response>
   ) {
-    const response = await continuation();
+    const response = await next();
     response.headers = [];
     response.headers["Filter-Does-Work"] = true;
+    response.headers['Args'] = mehtodContext.args;
     return response;
   },
 };
@@ -77,6 +80,7 @@ export interface Group {
 }
 
 @BasePath(API_PREFIX)
+@ActionFilter(TEST_FILTER)
 export class UserService extends BaseService {
   @GET("/users")
   async getUsers(@Header("X-Token") token: string): Promise<Response> {
@@ -87,7 +91,6 @@ export class UserService extends BaseService {
   async getUsersOther(@Header("X-Token") token: string): Promise<Response> { return <Response>{} };
 
   @GET("/users/{userId}")
-  @ActionFilter(TEST_FILTER)
   async getUser(
     @Header("X-Token") token: string,
     @Path("userId") userId: number

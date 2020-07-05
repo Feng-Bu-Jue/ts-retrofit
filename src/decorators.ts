@@ -14,7 +14,7 @@ interface Query {
  * @param {BaseService} target
  * @param {string} methodName
  */
-const ensureMeta = (target: BaseService, methodName: string) => {
+const ensureMeta = (target: BaseService, methodName: string | symbol) => {
   if (!target.__meta__) {
     target.__meta__ = {};
   }
@@ -347,20 +347,31 @@ export const ResponseType = (responseType: string) => {
   };
 };
 
+
+//const FiltersPropertyKey : symbol = Symbol('Filters')
+
 /**
  * Allow code to be run before or after in axios request
  * @param {Filter} ActionFilter
  * @returns {(target:any, methodName:string, paramIndex:number)=>undefined}
  * @constructor
  */
-export const ActionFilter = (filter: Filter) => {
+export const ActionFilter = (filter: Filter): any => {
   return (target: any, methodName: string) => {
-    ensureMeta(target, methodName);
-    // init filters array
-    if (!target.__meta__[methodName].Filters) {
-      target.__meta__[methodName].Filters = [];
+    if (!methodName) {
+      ensureMeta(target, methodName);
+      if (!target.prototype.__meta__.Filters) {
+        target.prototype.__meta__.Filters = [];
+      }
+      target.prototype.__meta__.Filters.push(filter);
     }
-    target.__meta__[methodName].Filters.push(filter);
+    else {
+      ensureMeta(target, methodName);
+      if (!target.__meta__[methodName].Filters) {
+        target.__meta__[methodName].Filters = [];
+      }
+      target.__meta__[methodName].Filters.push(filter);
+    }
   };
 };
 

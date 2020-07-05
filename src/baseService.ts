@@ -8,9 +8,14 @@ axios.defaults.withCredentials = true;
 export interface Response<T = any> extends AxiosResponse<T> { }
 export interface Filter {
   invoke(
+    methodContext: MethodContext,
     config: AxiosRequestConfig,
-    continuation: () => Promise<Response>,
+    next: () => Promise<Response>,
   ): Promise<Response>;
+}
+export interface MethodContext {
+  meta: any
+  args: any[]
 }
 
 const NON_HTTP_REQUEST_PROPERTY_NAME = "__nonHTTPRequestMethod__";
@@ -106,23 +111,25 @@ export class BaseService {
     if (this.__meta__[methodName].responseType) {
       config.responseType = this.__meta__[methodName].responseType;
     }
-    return this._sendRequestWithFilter(config, filters, 0, () => this._httpClient.sendRequest(config));
+
+    return this._sendRequestWithFilter({ meta: this.__meta__, args }, config, filters, 0, () => this._httpClient.sendRequest(config));
   }
 
   @nonHTTPRequestMethod
   private _sendRequestWithFilter(
+    methodContext: MethodContext,
     config: AxiosRequestConfig,
     filters: Filter[],
     index: number,
-    continuation: () => Promise<Response>,
+    next: () => Promise<Response>,
   ): Promise<Response> {
     if (filters?.length && filters[index]) {
       const filter = filters[index];
-      return filter.invoke(config, () =>
-        this._sendRequestWithFilter(config, filters, index + 1, continuation),
+      return filter.invoke(methodContext, config, () =>
+        this._sendRequestWithFilter(methodContext, config, filters, index + 1, next),
       );
     } else {
-      return continuation();
+      return next();
     }
   }
 
@@ -247,7 +254,7 @@ export class BaseService {
   @nonHTTPRequestMethod
   private _resolveActionFilters(methodName: string): Filter[] {
     const meta = this.__meta__;
-    return meta[methodName].Filters;
+    return [].concat(meta.Filters, meta[methodName].Filters);
   }
 }
 
