@@ -16,6 +16,7 @@ export interface Filter {
 export interface MethodContext {
   meta: any;
   args: any[];
+  methodName: string;
 }
 
 const NON_HTTP_REQUEST_PROPERTY_NAME = "__nonHTTPRequestMethod__";
@@ -115,7 +116,7 @@ export class BaseService {
     }
 
     return this._sendRequestWithFilter(
-      { meta: this.__meta__, args },
+      { meta: this.__meta__, args, methodName },
       config,
       filters,
       0,
