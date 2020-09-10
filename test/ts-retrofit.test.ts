@@ -56,7 +56,7 @@ describe("Test ts-retrofit.", () => {
       .build(UserService);
     const response = await userService.getUsers(TOKEN);
     expect(response.config.url).toEqual(
-      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users`
+      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users`,
     );
   });
 
@@ -67,7 +67,7 @@ describe("Test ts-retrofit.", () => {
     const response = await userService.getUsers(TOKEN);
     expect(response.config.method).toEqual("get");
     expect(response.config.url).toEqual(
-      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users`
+      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users`,
     );
   });
 
@@ -82,7 +82,7 @@ describe("Test ts-retrofit.", () => {
     const response = await userService.createUser(TOKEN, newUser);
     expect(response.config.method).toEqual("post");
     expect(response.config.url).toEqual(
-      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users`
+      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users`,
     );
   });
 
@@ -98,7 +98,7 @@ describe("Test ts-retrofit.", () => {
     const response = await userService.replaceUser(TOKEN, userId, user);
     expect(response.config.method).toEqual("put");
     expect(response.config.url).toEqual(
-      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/${userId}`
+      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/${userId}`,
     );
   });
 
@@ -112,7 +112,7 @@ describe("Test ts-retrofit.", () => {
     const response = await userService.updateUser(TOKEN, userId, user);
     expect(response.config.method).toEqual("patch");
     expect(response.config.url).toEqual(
-      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/${userId}`
+      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/${userId}`,
     );
   });
 
@@ -124,7 +124,7 @@ describe("Test ts-retrofit.", () => {
     const response = await userService.deleteUser(TOKEN, userId);
     expect(response.config.method).toEqual("delete");
     expect(response.config.url).toEqual(
-      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/${userId}`
+      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/${userId}`,
     );
   });
 
@@ -136,7 +136,7 @@ describe("Test ts-retrofit.", () => {
     const response = await userService.headUser(TOKEN, userId);
     expect(response.config.method).toEqual("head");
     expect(response.config.url).toEqual(
-      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/${userId}`
+      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/${userId}`,
     );
   });
 
@@ -148,7 +148,7 @@ describe("Test ts-retrofit.", () => {
     const response = await userService.optionsUser(TOKEN, userId);
     expect(response.config.method).toEqual("options");
     expect(response.config.url).toEqual(
-      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/${userId}`
+      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/${userId}`,
     );
   });
 
@@ -159,7 +159,7 @@ describe("Test ts-retrofit.", () => {
     const userId = 1;
     const response = await userService.getUser(TOKEN, userId);
     expect(response.config.url).toEqual(
-      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/${userId}`
+      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/${userId}`,
     );
   });
 
@@ -170,7 +170,7 @@ describe("Test ts-retrofit.", () => {
     const userId = 1;
     const response = await userService.getUser1(TOKEN, userId);
     expect(response.config.url).toEqual(
-      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/uid-${userId}`
+      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/uid-${userId}`,
     );
   });
 
@@ -196,7 +196,7 @@ describe("Test ts-retrofit.", () => {
     };
     const response = await authService.auth(auth);
     expect(response.config.headers["Content-Type"]).toEqual(
-      "application/x-www-form-urlencoded;charset=utf-8"
+      "application/x-www-form-urlencoded;charset=utf-8",
     );
     expect(response.config.headers["Accept"]).toEqual("application/json");
   });
@@ -216,7 +216,7 @@ describe("Test ts-retrofit.", () => {
     const post: Post = { title: "hello", content: "world" };
     const response = await postService.createPost3(
       { "X-Foo": "foo", "X-Bar": "bar" },
-      post
+      post,
     );
     expect(response.config.headers["X-Foo"]).toEqual("foo");
     expect(response.config.headers["X-Bar"]).toEqual("bar");
@@ -252,7 +252,7 @@ describe("Test ts-retrofit.", () => {
     };
     const response = await searchService.search(TOKEN, query);
     expect(response.config.url).toEqual(
-      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/search`
+      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/search`,
     );
     expect(response.config.params).toMatchObject(query);
   });
@@ -263,7 +263,7 @@ describe("Test ts-retrofit.", () => {
       .build(PostService);
     const response = await postService.createPost("hello", "world");
     expect(response.config.headers["Content-Type"]).toEqual(
-      "application/x-www-form-urlencoded;charset=utf-8"
+      "application/x-www-form-urlencoded;charset=utf-8",
     );
   });
 
@@ -279,7 +279,7 @@ describe("Test ts-retrofit.", () => {
     };
     const response = await groupService.createGroup(group);
     expect(response.config.data).toEqual(
-      "name=Video%20Game&description=Video%20game%20group%21&members=%5B1%2C2%2C3%5D&tags=%5B%22video%22%2C%22game%22%2C%22PS4%22%2C%22XBox%22%5D"
+      "name=Video%20Game&description=Video%20game%20group%21&members=%5B1%2C2%2C3%5D&tags=%5B%22video%22%2C%22game%22%2C%22PS4%22%2C%22XBox%22%5D",
     );
   });
 
@@ -289,7 +289,7 @@ describe("Test ts-retrofit.", () => {
       .build(PostService);
     const response = await postService.createPost("hello", "world");
     expect(response.config.headers["Content-Type"]).toEqual(
-      "application/x-www-form-urlencoded;charset=utf-8"
+      "application/x-www-form-urlencoded;charset=utf-8",
     );
     expect(response.config.data).toEqual("title=hello&content=world");
   });
@@ -303,7 +303,7 @@ describe("Test ts-retrofit.", () => {
       content: "world",
     });
     expect(response.config.headers["Content-Type"]).toEqual(
-      "application/x-www-form-urlencoded;charset=utf-8"
+      "application/x-www-form-urlencoded;charset=utf-8",
     );
     expect(response.config.data).toEqual("title=hello&content=world");
   });
@@ -321,7 +321,7 @@ describe("Test ts-retrofit.", () => {
     };
     const response = await fileService.upload(bucket, file);
     expect(response.config.headers["Content-Type"]).toContain(
-      "multipart/form-data"
+      "multipart/form-data",
     );
   });
 
@@ -333,7 +333,7 @@ describe("Test ts-retrofit.", () => {
     const to = { value: ["+22222222", "+33333333"] };
     const response = await messagingService.createSMS(from, to);
     expect(response.config.headers["Content-Type"]).toContain(
-      "multipart/form-data"
+      "multipart/form-data",
     );
   });
 

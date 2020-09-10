@@ -115,7 +115,19 @@ export class BaseService {
       config,
       filters,
       0,
-      () => this._httpClient.sendRequest(config),
+      () => {
+        const contentType = headers["content-type"] || "application/json";
+        const dataResolverFactory = new DataResolverFactory();
+        const dataResolver = dataResolverFactory.createDataResolver(contentType);
+        config.data = dataResolver.resolve(headers, config.data);
+        if (
+          headers["content-type"] &&
+          headers["content-type"].indexOf("multipart/form-data") !== -1
+        ) {
+          config.headers = { ...headers, ...(config.data as FormData).getHeaders() };
+        }
+        return this._httpClient.sendRequest(config);
+      },
     );
   }
 
@@ -147,16 +159,10 @@ export class BaseService {
   private _resolveParameters(methodName: string, args: any[]): any {
     const url = this._resolveUrl(methodName, args);
     const method = this._resolveHttpMethod(methodName);
-    let headers = this._resolveHeaders(methodName, args);
+    const headers = this._resolveHeaders(methodName, args);
     const query = this._resolveQuery(methodName, args);
     const data = this._resolveData(methodName, headers, args);
     const filters = this._resolveActionFilters(methodName);
-    if (
-      headers["content-type"] &&
-      headers["content-type"].indexOf("multipart/form-data") !== -1
-    ) {
-      headers = { ...headers, ...(data as FormData).getHeaders() };
-    }
     return { url, method, headers, query, data, filters };
   }
 
@@ -310,11 +316,7 @@ export class BaseService {
       }
       data = { ...data, ...reqData };
     }
-
-    const contentType = headers["content-type"] || "application/json";
-    const dataResolverFactory = new DataResolverFactory();
-    const dataResolver = dataResolverFactory.createDataResolver(contentType);
-    return dataResolver.resolve(headers, data);
+    return data;
   }
 
   @nonHTTPRequestMethod
