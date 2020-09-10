@@ -3,12 +3,6 @@ import * as fs from "fs";
 import axios, { AxiosRequestConfig } from "axios";
 import { app } from "./fixture/server";
 import {
-  ServiceBuilder,
-  RequestInterceptorFunction,
-  ResponseInterceptorFunction,
-  RequestInterceptor,
-} from "../src";
-import {
   TEST_SERVER_ENDPOINT,
   TEST_SERVER_PORT,
   API_PREFIX,
@@ -26,8 +20,18 @@ import {
   Post,
   Group,
   InterceptorService,
+  TransformerService,
+  TimeoutService,
+  ResponseStatusService,
+  ConfigService,
 } from "./fixture/fixtures";
 import { DATA_CONTENT_TYPES, HttpContentType } from "../src/constants";
+import {
+  ServiceBuilder,
+  RequestInterceptorFunction,
+  ResponseInterceptorFunction,
+  RequestInterceptor,
+} from "../src/baseService";
 
 declare module "axios" {
   interface AxiosRequestConfig {
@@ -60,7 +64,6 @@ describe("Test ts-retrofit.", () => {
     const userService = new ServiceBuilder()
       .setEndpoint(TEST_SERVER_ENDPOINT)
       .build(UserService);
-
     const response = await userService.getUsers(TOKEN);
     expect(response.config.method).toEqual("get");
     expect(response.config.url).toEqual(
@@ -157,6 +160,17 @@ describe("Test ts-retrofit.", () => {
     const response = await userService.getUser(TOKEN, userId);
     expect(response.config.url).toEqual(
       `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/${userId}`
+    );
+  });
+
+  test("Test `@Path` decorator 1.", async () => {
+    const userService = new ServiceBuilder()
+      .setEndpoint(TEST_SERVER_ENDPOINT)
+      .build(UserService);
+    const userId = 1;
+    const response = await userService.getUser1(TOKEN, userId);
+    expect(response.config.url).toEqual(
+      `${TEST_SERVER_ENDPOINT}${API_PREFIX}/users/uid-${userId}`
     );
   });
 
@@ -330,8 +344,8 @@ describe("Test ts-retrofit.", () => {
     const userId = 1;
     const response = await userService.getUser(TOKEN, userId);
     expect(response.headers["Filter-Does-Work"]).toEqual(true);
-    expect(response.headers["Args"][0]).toEqual(TOKEN);
-    expect(response.headers["Args"][1]).toEqual(userId);
+    expect(response.headers.Args[0]).toEqual(TOKEN);
+    expect(response.headers.Args[1]).toEqual(userId);
   });
 
   test("Test multi-standalone services", async () => {
@@ -496,8 +510,63 @@ describe("Test ts-retrofit.", () => {
       .setEndpoint(TEST_SERVER_ENDPOINT)
       .build(UserService);
     const response = await service.getUsersOther(TOKEN);
-    console.log('url', response.config.url);
     expect(response.config.method).toEqual("get");
     expect(response.config.url).toEqual(`${TEST_SERVER_ENDPOINT}/users`);
-  })
+  });
+
+  test("Test `@RequestTransformer` decorator.", async () => {
+    const service = new ServiceBuilder()
+      .setEndpoint(TEST_SERVER_ENDPOINT)
+      .build(TransformerService);
+    const response = await service.createSomething({ name: "ts-retrofit" });
+    expect(response.config.data).toEqual('{"name":"ts-retrofit","foo":"foo"}');
+  });
+
+  test("Test `@ResponseTransformer` decorator.", async () => {
+    const service = new ServiceBuilder()
+      .setEndpoint(TEST_SERVER_ENDPOINT)
+      .build(TransformerService);
+    const response = await service.getSomething();
+    expect(response.data).toEqual({ foo: "foo" });
+  });
+
+  test("Test `setTimeout` method.", async () => {
+    const service = new ServiceBuilder()
+      .setEndpoint(TEST_SERVER_ENDPOINT)
+      .setTimeout(3000)
+      .build(TimeoutService);
+    await expect(service.sleep5000()).rejects.toThrow(/timeout/);
+  });
+
+  test("Test `@Timeout` decorator.", async () => {
+    const service = new ServiceBuilder()
+      .setEndpoint(TEST_SERVER_ENDPOINT)
+      .build(TimeoutService);
+    await expect(service.timeoutIn3000()).rejects.toThrow(/timeout/);
+  });
+
+  test("The timeout in `@Timeout` decorator should shield the value in `setTimeout` method.", async () => {
+    const service = new ServiceBuilder()
+      .setEndpoint(TEST_SERVER_ENDPOINT)
+      .setTimeout(3000)
+      .build(TimeoutService);
+    const response = await service.timeoutIn6000();
+    expect(response.config.timeout).toEqual(6000);
+    expect(response.data).toEqual({});
+  });
+
+  test("Test `@ResponseStatus` decorator.", async () => {
+    const service = new ServiceBuilder()
+      .setEndpoint(TEST_SERVER_ENDPOINT)
+      .build(ResponseStatusService);
+    expect(service.__meta__.getSomething.responseStatus).toEqual(200);
+  });
+
+  test("Test `@Config` decorator.", async () => {
+    const service = new ServiceBuilder()
+      .setEndpoint(TEST_SERVER_ENDPOINT)
+      .build(ConfigService);
+    const response = await service.getConfig();
+    expect(response.config.maxRedirects).toEqual(1);
+  });
 });

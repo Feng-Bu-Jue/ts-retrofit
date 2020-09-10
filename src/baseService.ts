@@ -10,7 +10,7 @@ export interface Filter {
   invoke(
     methodContext: MethodContext,
     config: AxiosRequestConfig,
-    next: () => Promise<Response>
+    next: () => Promise<Response>,
   ): Promise<Response>;
 }
 export interface MethodContext {
@@ -29,7 +29,7 @@ export const nonHTTPRequestMethod = (target: any, methodName: string) => {
   Object.defineProperty(
     target[methodName],
     NON_HTTP_REQUEST_PROPERTY_NAME,
-    descriptor
+    descriptor,
   );
 };
 
@@ -39,12 +39,14 @@ export class BaseService {
   private _httpClient: HttpClient;
   private _methodMap: Map<string, Function>;
   private _filters: Filter[];
+  private _timeout: number;
 
   constructor(serviceBuilder: ServiceBuilder) {
     this._endpoint = serviceBuilder.endpoint;
     this._httpClient = new HttpClient(serviceBuilder);
     this._filters = serviceBuilder.filters;
     this._methodMap = new Map<string, Function>();
+    this._timeout = serviceBuilder.timeout;
 
     const methodNames = this._getInstanceMethodNames();
     methodNames.forEach((methodName) => {
@@ -60,7 +62,7 @@ export class BaseService {
           const method = self._methodMap[methodName];
           const methodOriginalDescriptor = Object.getOwnPropertyDescriptor(
             method,
-            NON_HTTP_REQUEST_PROPERTY_NAME
+            NON_HTTP_REQUEST_PROPERTY_NAME,
           );
           if (
             methodOriginalDescriptor &&
@@ -90,8 +92,58 @@ export class BaseService {
     });
   }
 
+  private _wrap(methodName: string, args: any[]): Promise<Response> {
+    const {
+      url,
+      method,
+      headers,
+      query,
+      data,
+      filters,
+    } = this._resolveParameters(methodName, args);
+    const config = this._makeConfig(
+      methodName,
+      url,
+      method,
+      headers,
+      query,
+      data,
+    );
+    return this._sendRequestWithFilter(
+      { meta: this.__meta__, args, methodName },
+      config,
+      filters,
+      0,
+      () => this._httpClient.sendRequest(config),
+    );
+  }
+
   @nonHTTPRequestMethod
-  private async _wrap(methodName: string, args: any[]): Promise<Response> {
+  private _sendRequestWithFilter(
+    methodContext: MethodContext,
+    config: AxiosRequestConfig,
+    filters: Filter[],
+    index: number,
+    next: () => Promise<Response>,
+  ): Promise<Response> {
+    if (filters?.length && filters[index]) {
+      const filter = filters[index];
+      return filter.invoke(methodContext, config, () =>
+        this._sendRequestWithFilter(
+          methodContext,
+          config,
+          filters,
+          index + 1,
+          next,
+        ),
+      );
+    } else {
+      return next();
+    }
+  }
+
+  @nonHTTPRequestMethod
+  private _resolveParameters(methodName: string, args: any[]): any {
     const url = this._resolveUrl(methodName, args);
     const method = this._resolveHttpMethod(methodName);
     let headers = this._resolveHeaders(methodName, args);
@@ -104,48 +156,46 @@ export class BaseService {
     ) {
       headers = { ...headers, ...(data as FormData).getHeaders() };
     }
-    const config: AxiosRequestConfig = {
+    return { url, method, headers, query, data, filters };
+  }
+
+  @nonHTTPRequestMethod
+  private _makeConfig(
+    methodName: string,
+    url: string,
+    method: HttpMethod,
+    headers: any,
+    query: any,
+    data: any,
+  ): AxiosRequestConfig {
+    let config: AxiosRequestConfig = {
       url,
       method,
       headers,
       params: query,
       data,
     };
+    // response type
     if (this.__meta__[methodName].responseType) {
       config.responseType = this.__meta__[methodName].responseType;
     }
 
-    return this._sendRequestWithFilter(
-      { meta: this.__meta__, args, methodName },
-      config,
-      filters,
-      0,
-      () => this._httpClient.sendRequest(config)
-    );
-  }
-
-  @nonHTTPRequestMethod
-  private _sendRequestWithFilter(
-    methodContext: MethodContext,
-    config: AxiosRequestConfig,
-    filters: Filter[],
-    index: number,
-    next: () => Promise<Response>
-  ): Promise<Response> {
-    if (filters?.length && filters[index]) {
-      const filter = filters[index];
-      return filter.invoke(methodContext, config, () =>
-        this._sendRequestWithFilter(
-          methodContext,
-          config,
-          filters,
-          index + 1,
-          next
-        )
-      );
-    } else {
-      return next();
+    // request transformer
+    if (this.__meta__[methodName].requestTransformer) {
+      config.transformRequest = this.__meta__[methodName].requestTransformer;
     }
+    // response transformer
+    if (this.__meta__[methodName].responseTransformer) {
+      config.transformResponse = this.__meta__[methodName].responseTransformer;
+    }
+    // timeout
+    config.timeout = this.__meta__[methodName].timeout || this._timeout;
+    // mix in config set by @Config
+    config = {
+      ...config,
+      ...this.__meta__[methodName].config,
+    };
+    return config;
   }
 
   @nonHTTPRequestMethod
@@ -274,10 +324,10 @@ export class BaseService {
 }
 
 export type RequestInterceptorFunction = (
-  value: AxiosRequestConfig
+  value: AxiosRequestConfig,
 ) => AxiosRequestConfig | Promise<AxiosRequestConfig>;
 export type ResponseInterceptorFunction<T = any> = (
-  value: AxiosResponse<T>
+  value: AxiosResponse<T>,
 ) => AxiosResponse<T> | Promise<AxiosResponse<T>>;
 
 abstract class BaseInterceptor {
@@ -288,13 +338,13 @@ abstract class BaseInterceptor {
 
 export abstract class RequestInterceptor extends BaseInterceptor {
   public abstract onFulfilled(
-    value: AxiosRequestConfig
+    value: AxiosRequestConfig,
   ): AxiosRequestConfig | Promise<AxiosRequestConfig>;
 }
 
 export abstract class ResponseInterceptor<T = any> extends BaseInterceptor {
   public abstract onFulfilled(
-    value: AxiosResponse<T>
+    value: AxiosResponse<T>,
   ): AxiosResponse<T> | Promise<AxiosResponse<T>>;
 }
 
@@ -308,6 +358,7 @@ export class ServiceBuilder {
     ResponseInterceptorFunction | ResponseInterceptor
   > = [];
   private _filters: Filter[] = [];
+  private _timeout: number = 60000;
 
   public build<T>(service: new (builder: ServiceBuilder) => T): T {
     return new service(this);
@@ -319,7 +370,7 @@ export class ServiceBuilder {
   }
 
   // 单例模式
-  public setStandalone(standalone: boolean | AxiosInstance) {
+  public setStandalone(standalone: boolean | AxiosInstance): ServiceBuilder {
     this._standalone = standalone;
     return this;
   }
@@ -327,7 +378,7 @@ export class ServiceBuilder {
   // 插入请求拦截器
   public setRequestInterceptors(
     ...interceptors: Array<RequestInterceptorFunction | RequestInterceptor>
-  ) {
+  ): ServiceBuilder {
     this._requestInterceptors.push(...interceptors);
     return this;
   }
@@ -335,13 +386,18 @@ export class ServiceBuilder {
   // 插入应答拦截器
   public setResponseInterceptors(
     ...interceptors: Array<ResponseInterceptorFunction | ResponseInterceptor>
-  ) {
+  ): ServiceBuilder {
     this._responseInterceptors.push(...interceptors);
     return this;
   }
 
-  public setFilters(...filters: Filter[]) {
+  public setFilters(...filters: Filter[]): ServiceBuilder {
     this._filters.push(...filters);
+    return this;
+  }
+
+  public setTimeout(timeout: number): ServiceBuilder {
+    this._timeout = timeout;
     return this;
   }
 
@@ -368,6 +424,10 @@ export class ServiceBuilder {
   get filters(): Filter[] {
     return this._filters;
   }
+
+  get timeout(): number {
+    return this._timeout;
+  }
 }
 
 class HttpClient {
@@ -384,7 +444,7 @@ class HttpClient {
       if (interceptor instanceof RequestInterceptor) {
         this.axios.interceptors.request.use(
           interceptor.onFulfilled.bind(interceptor),
-          interceptor.onRejected.bind(interceptor)
+          interceptor.onRejected.bind(interceptor),
         );
       } else {
         this.axios.interceptors.request.use(interceptor);
@@ -395,7 +455,7 @@ class HttpClient {
       if (interceptor instanceof ResponseInterceptor) {
         this.axios.interceptors.response.use(
           interceptor.onFulfilled.bind(interceptor),
-          interceptor.onRejected.bind(interceptor)
+          interceptor.onRejected.bind(interceptor),
         );
       } else {
         this.axios.interceptors.response.use(interceptor);

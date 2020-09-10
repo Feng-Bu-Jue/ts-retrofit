@@ -1,33 +1,8 @@
 import {
-  GET,
-  POST,
-  PUT,
-  PATCH,
-  DELETE,
-  HEAD,
-  OPTIONS,
-  BasePath,
-  Header,
-  Queries,
-  Headers,
-  Path,
-  Query,
-  QueryMap,
-  Body,
-  FormUrlEncoded,
-  Field,
-  FieldMap,
-  Multipart,
-  ResponseType,
-  Part,
-  PartDescriptor,
-  BaseService,
-  Response,
-  HeaderMap,
-  ActionFilter,
-  Filter,
-  MethodContext,
-} from "../../src/index";
+  GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, BasePath, Header, Queries, Headers, Path, Query, QueryMap, Body,
+  FormUrlEncoded, Field, FieldMap, Multipart, ResponseType, Part, PartDescriptor, BaseService, Response, HeaderMap,
+  RequestTransformer, ResponseTransformer, Timeout, ResponseStatus, Config, Filter, MethodContext, ActionFilter,
+} from "../../src";
 import { AxiosRequestConfig } from "axios";
 
 export const TEST_SERVER_HOST = "http://localhost";
@@ -79,6 +54,10 @@ export interface Group {
   tags: string[];
 }
 
+export interface Something {
+  name: string;
+}
+
 @BasePath(API_PREFIX)
 @ActionFilter(TEST_FILTER)
 export class UserService extends BaseService {
@@ -97,6 +76,9 @@ export class UserService extends BaseService {
   ): Promise<Response> {
     return <Response>{};
   }
+
+  @GET("/users/uid-{userId}")
+  async getUser1(@Header("X-Token") token: string, @Path("userId") userId: number): Promise<Response> { return <Response>{} };
 
   @POST("/users")
   async createUser(
@@ -271,7 +253,54 @@ export class InterceptorService extends BaseService {
   }
 
   @GET("/header")
-  async getHeader(): Promise<Response> {
-    return <Response>{};
-  }
+  async getHeader(): Promise<Response> { return <Response>{} };
+}
+
+@BasePath(API_PREFIX)
+export class TransformerService extends BaseService {
+  @POST("/request-transformer")
+  @RequestTransformer((data: any, headers?: any) => {
+    data.foo = 'foo';
+    return JSON.stringify(data);
+  })
+  async createSomething(@Body body: Something): Promise<Response> { return <Response>{} };
+
+  @GET("/response-transformer")
+  @ResponseTransformer((data: any, headers?: any) => {
+    const json = JSON.parse(data);
+    json.foo = 'foo';
+    return json;
+  })
+  async getSomething(): Promise<Response<Something>> { return <Response<Something>>{} };
+}
+
+@BasePath(API_PREFIX)
+export class TimeoutService extends BaseService {
+  @GET("/sleep-5000")
+  async sleep5000(): Promise<Response> { return <Response>{} };
+
+  @GET("/sleep-5000")
+  @Timeout(3000)
+  async timeoutIn3000(): Promise<Response> { return <Response>{} };
+
+  @GET("/sleep-5000")
+  @Timeout(6000)
+  async timeoutIn6000(): Promise<Response> { return <Response>{} };
+}
+
+@BasePath(API_PREFIX)
+export class ResponseStatusService extends BaseService {
+  @GET("/response-status")
+  @ResponseStatus(200)
+  async getSomething(): Promise<Response> { return <Response>{} };
+}
+
+@BasePath(API_PREFIX)
+export class ConfigService extends BaseService {
+  @GET("/config")
+  @Config({
+    maxRedirects: 1,
+  })
+  @ResponseStatus(200)
+  async getConfig(): Promise<Response> { return <Response>{} };
 }
