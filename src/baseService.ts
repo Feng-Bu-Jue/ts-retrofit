@@ -92,6 +92,7 @@ export class BaseService {
     });
   }
 
+  @nonHTTPRequestMethod
   private _wrap(methodName: string, args: any[]): Promise<Response> {
     const {
       url,
