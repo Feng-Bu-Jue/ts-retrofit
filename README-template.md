@@ -1,3 +1,9 @@
+## What is the diff with main repo (! ! !)
+
+add global filters and method-level decorator(@AcitonFilter) to access method context(it contains method arguments, meta, config), we have more ability to write logic handling according to the custom decorator
+
+[example](https://github.com/Feng-Bu-Jue/h.bilibili-rn/blob/master/src/bilibiliApi/extensions.ts)
+
 # ts-retrofit
 
 [![build status](https://travis-ci.org/nullcc/ts-retrofit.svg?branch=master)](https://travis-ci.org/nullcc/ts-retrofit)
@@ -9,16 +15,10 @@
 
 > A declarative and axios based retrofit implementation for JavaScript and TypeScript.
 
-## What is the diff with main repo (! ! !)
-
-add global filters and mehtod-level decoractor(@AcitonFilter) to access methodContext(it contains method arguments,meta,config), we have more ability write logic handling according to custom decoractor
-
-[example](https://github.com/Feng-Bu-Jue/h.bilibili-rn/blob/master/src/bilibiliApi/extensions.ts)
-
 ## Install
 
 ```bash
-$ npm i ts-retrofit
+$ npm i github:Feng-Bu-Jue/ts-retrofit
 ```
 
 ## Quick Overview

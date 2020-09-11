@@ -1,6 +1,6 @@
 ## What is the diff with main repo (! ! !)
 
-add global filters and mehtod-level decoractor(@AcitonFilter) to access methodContext(it contains method arguments,meta,config), we have more ability write logic handling according to custom decoractor
+add global filters and method-level decorator(@AcitonFilter) to access method context(it contains method arguments, meta, config), we have more ability to write logic handling according to the custom decorator
 
 [example](https://github.com/Feng-Bu-Jue/h.bilibili-rn/blob/master/src/bilibiliApi/extensions.ts)
 
